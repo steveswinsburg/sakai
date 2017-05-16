@@ -27,7 +27,7 @@
 		</property>
 		<property name="target">
 			<bean
-				class="org.sakaiproject.component.app.syllabus.SyllabusManagerImpl">
+				class="org.sakaiproject.component.app.syllabus.SyllabusManagerImpl" init-method="init">
 				<property name="sessionFactory">
 					<ref
 						bean="org.sakaiproject.springframework.orm.hibernate.GlobalSessionFactory" />
@@ -41,6 +41,7 @@
 				<property name="preferencesService" ref="org.sakaiproject.user.api.PreferencesService" />
 				<property name="timeService" ref="org.sakaiproject.time.api.TimeService" />
 				<property name="entityManager"><ref bean="org.sakaiproject.entity.api.EntityManager"/></property>
+				<property name="archiverService" ref="org.sakaiproject.archiver.api.ArchiverService" />
 			</bean>
 		</property>
 		<property name="transactionAttributes">

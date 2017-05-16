@@ -59,6 +59,12 @@
       <artifactId>sakai-syllabus-hbm</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.sakaiproject.archiver</groupId>
+      <artifactId>archiver-api</artifactId>
+  	  <version>0.1-SNAPSHOT</version>
+  	  <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.sakaiproject.common</groupId>
       <artifactId>archive-api</artifactId>
     </dependency>

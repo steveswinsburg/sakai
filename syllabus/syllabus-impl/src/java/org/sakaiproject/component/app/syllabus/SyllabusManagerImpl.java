@@ -37,6 +37,9 @@ import org.sakaiproject.api.app.syllabus.SyllabusAttachment;
 import org.sakaiproject.api.app.syllabus.SyllabusData;
 import org.sakaiproject.api.app.syllabus.SyllabusItem;
 import org.sakaiproject.api.app.syllabus.SyllabusManager;
+import org.sakaiproject.archiver.api.Archiveable;
+import org.sakaiproject.archiver.api.ArchiverService;
+import org.sakaiproject.archiver.util.Jsonifier;
 import org.sakaiproject.calendar.api.Calendar;
 import org.sakaiproject.calendar.api.CalendarEvent;
 import org.sakaiproject.calendar.api.CalendarEventEdit;
@@ -49,6 +52,7 @@ import org.sakaiproject.entity.api.Reference;
 import org.sakaiproject.exception.IdUnusedException;
 import org.sakaiproject.exception.InUseException;
 import org.sakaiproject.exception.PermissionException;
+import org.sakaiproject.exception.ServerOverloadException;
 import org.sakaiproject.exception.TypeException;
 import org.sakaiproject.site.api.SiteService;
 import org.sakaiproject.time.api.Time;
@@ -60,19 +64,23 @@ import org.sakaiproject.user.cover.UserDirectoryService;
 import org.springframework.orm.hibernate4.HibernateCallback;
 import org.springframework.orm.hibernate4.support.HibernateDaoSupport;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * SyllabusManagerImpl provides convenience functions to query the database
  * 
  * @author <a href="mailto:jlannan@iupui.edu">Jarrod Lannan </a>
  * @version $Id:
  */
-public class SyllabusManagerImpl extends HibernateDaoSupport implements SyllabusManager
+public class SyllabusManagerImpl extends HibernateDaoSupport implements SyllabusManager, Archiveable
 {
   private ContentHostingService contentHostingService;
   private CalendarService calendarService;
   private PreferencesService preferencesService;
   private TimeService timeService;
   private EntityManager entityManager;
+  private ArchiverService archiverService;
   private static final String QUERY_BY_USERID_AND_CONTEXTID = "findSyllabusItemByUserAndContextIds";
   private static final String QUERY_BY_CONTEXTID = "findSyllabusItemByContextId";
   private static final String QUERY_LARGEST_POSITION = "findLargestSyllabusPosition";
@@ -981,6 +989,70 @@ public class SyllabusManagerImpl extends HibernateDaoSupport implements Syllabus
 	public void setEntityManager(EntityManager entityManager) {
 		this.entityManager = entityManager;
 	}
+
+	public void setArchiverService(ArchiverService archiverService) {
+		this.archiverService = archiverService;
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public void archive(String archiveId, String siteId, boolean includeStudentContent) {
+
+		// Get syllabus
+		SyllabusItem siteSyllabus = this.getSyllabusItemByContextId(siteId);
+
+		// Get the data
+		Set<SyllabusData> syllabusSet = this.getSyllabiForSyllabusItem(siteSyllabus);
+
+		// Go through and archive each syllabus item
+		ArchiveItem archiveItem = new ArchiveItem();
+		for (SyllabusData syllabus : syllabusSet) {
+			logger.debug("Collecting " + syllabus.getTitle());
+			archiveItem.setTitle(syllabus.getTitle());
+			archiveItem.setData(syllabus.getAsset());
+			archiveItem.setStartDate(syllabus.getStartDate());
+			archiveItem.setEndDate(syllabus.getEndDate());
+
+			//get the attachments
+			Set<SyllabusAttachment> syllabusAttachments = this.getSyllabusAttachmentsForSyllabusData(syllabus);
+
+			for (SyllabusAttachment syllabusAttachment : syllabusAttachments) {
+				byte[] syllabusAttachmentBytes;
+				try {
+					syllabusAttachmentBytes = this.contentHostingService.getResource(syllabusAttachment.getAttachmentId()).getContent();
+					this.archiverService.archiveContent(archiveId, siteId, "sakai.syllabus", syllabusAttachmentBytes, syllabusAttachment.getName(), syllabus.getTitle());
+					logger.debug("Attachment:  " +syllabusAttachment.getName() + " Sub-directory: " + syllabus.getTitle());
+				} catch (ServerOverloadException | PermissionException | IdUnusedException | TypeException e) {
+					e.printStackTrace();
+				}
+			}
+			logger.debug("JSON: " +Jsonifier.toJson(archiveItem));
+			this.archiverService.archiveContent(archiveId, siteId, "sakai.syllabus", Jsonifier.toJson(archiveItem).getBytes(), archiveItem.getTitle());
+		}
+	}
+	
+	public void init() {
+		org.sakaiproject.archiver.api.ArchiverRegistry.getInstance().register("sakai.syllabus", this);
+	}
+	
+	/**
+	 * Simplified helper class to represent an individual syllabus item in a site
+	 */
+	public static class ArchiveItem {
+		
+		@Getter @Setter
+		private String title;
+		
+		@Getter @Setter
+		private String data;
+		
+		@Getter @Setter
+		private Date startDate;
+		
+		@Getter @Setter
+		private Date endDate;
+	}
+	
 }
 
 
