@@ -28,12 +28,6 @@
 		<property name="userNotificationProvider" ref="org.sakaiproject.sitemanage.api.UserNotificationProvider"/>
 	</bean>
 
-	<bean id="org.sakaiproject.sitemanage.api.SiteTypeProvider"
-			class="org.sakaiproject.sitemanage.impl.SiteTypeProviderImpl"
-			init-method="init"
-			destroy-method="destroy">
-	</bean>
-	
 	<bean id="org.sakaiproject.sitemanage.api.SectionFieldProvider"
 			class="org.sakaiproject.sitemanage.impl.SectionFieldProviderImpl"
 			init-method="init"
