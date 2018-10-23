@@ -46,17 +46,7 @@
 			init-method="init"
 			destroy-method="destroy">
 	</bean>
-	 
-	<!--<bean id="org.sakaiproject.sitemanage.api.UserNotificationProvider" 
-		class="org.sakaiproject.sitemanage.impl.UserNotificationProviderImpl"
-		init-method="init">
-		<property name="emailService" ref="org.sakaiproject.email.api.EmailService"/>
-		<property name="userDirectoryService" ref="org.sakaiproject.user.api.UserDirectoryService"/>
-		<property name="serverConfigurationService" ref="org.sakaiproject.component.api.ServerConfigurationService"/>
-		<property name="developerHelperService" ref="org.sakaiproject.entitybroker.DeveloperHelperService" />
-	</bean>-->
 
-	<!-- Uncomment to use the EmailTemplateService notification provider -->
 	<bean id="org.sakaiproject.sitemanage.api.UserNotificationProvider" 
 		class="org.sakaiproject.sitemanage.impl.ETSUserNotificationProviderImpl"
 		init-method="init">
